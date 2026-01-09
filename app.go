@@ -90,3 +90,27 @@ func (a *App) startSystemMonitor() {
 		runtime.EventsEmit(a.ctx, "system_stats", stats)
 	}
 }
+
+func (a *App) KillProcess(pid int32) (string, error) {
+	dialog, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+		Type:    runtime.QuestionDialog,
+		Title:   fmt.Sprintf("Kill procces, pid: %d", pid),
+		Message: fmt.Sprintf("Do you real kill this procces: %d", pid),
+		Buttons: []string{"Yes", "No"},
+	})
+	if err != nil {
+		return "question dialogs errors", err
+	}
+	if dialog == "No" {
+		return "question dialogs cancel", nil
+	}
+	p, err := process.NewProcess(pid)
+	if err != nil {
+		return "process errors", err
+	}
+	err = p.Kill()
+	if err != nil {
+		return "process errors", err
+	}
+	return "process killed", nil
+}

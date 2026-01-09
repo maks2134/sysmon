@@ -1,6 +1,13 @@
 <script setup>
-// Принимаем список процессов как проп
+import {KillProcess} from "../../wailsjs/go/main/App.js";
+
 defineProps(['processes']);
+
+const killProc = (pid) => {
+  KillProcess(pid).then((result) => {
+    alert(result);
+  });
+}
 </script>
 
 <template>
@@ -13,15 +20,17 @@ defineProps(['processes']);
           <th>PID</th>
           <th>Name</th>
           <th>RAM %</th>
+          <th>Killing</th>
         </tr>
         </thead>
         <tbody>
-        <!-- Цикл по процессам -->
         <tr v-for="proc in processes" :key="proc.pid">
           <td class="pid">{{ proc.pid }}</td>
           <td class="name">{{ proc.name }}</td>
-          <!-- Округляем до 1 знака -->
           <td class="ram">{{ proc.ram.toFixed(1) }}%</td>
+          <td>
+            <button @click="killProc(proc.pid)" class="kill-btn">Kill</button>
+          </td>
         </tr>
         </tbody>
       </table>
@@ -35,7 +44,6 @@ defineProps(['processes']);
   border-radius: 12px;
   padding: 15px;
   color: white;
-  /* Занимаем всю ширину */
   width: 100%;
   box-sizing: border-box;
   margin-top: 20px;
@@ -48,7 +56,7 @@ h3 {
 }
 
 .table-scroll {
-  max-height: 300px; /* Если процессов много, появится скролл */
+  max-height: 300px;
   overflow-y: auto;
 }
 
@@ -61,7 +69,7 @@ th {
   text-align: left;
   padding: 8px;
   background-color: #2b2d42;
-  position: sticky; /* Заголовок прилипает при скролле */
+  position: sticky;
   top: 0;
 }
 
@@ -85,5 +93,19 @@ td {
   color: #4cc9f0;
   text-align: right;
   width: 80px;
+}
+
+.kill-btn {
+  background: #ef233c;
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.kill-btn:hover {
+  background: #d90429;
 }
 </style>
