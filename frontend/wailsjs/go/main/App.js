@@ -5,3 +5,7 @@
 export function KillProcess(arg1) {
   return window['go']['main']['App']['KillProcess'](arg1);
 }
+
+export function SendToggleEvent(arg1) {
+  return window['go']['main']['App']['SendToggleEvent'](arg1);
+}

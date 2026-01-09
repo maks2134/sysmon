@@ -16,6 +16,12 @@ const history = reactive({
   processes: []
 });
 
+const visibility = reactive({
+  cpu: true,
+  ram: true,
+  disk: true
+});
+
 onMounted(() => {
   EventsOn("system_stats", (data) => {
     const cpuVal = data.cpu ? parseFloat(data.cpu.toFixed(1)) : 0;
@@ -30,6 +36,12 @@ onMounted(() => {
 
     history.processes = data.processes || [];
   });
+
+  EventsOn("toggle_graph", (graphName) => {
+    if (graphName === 'cpu') visibility.cpu = !visibility.cpu;
+    if (graphName === 'ram') visibility.ram = !visibility.ram;
+    if (graphName === 'disk') visibility.disk = !visibility.disk;
+  });
 });
 </script>
 
@@ -38,9 +50,29 @@ onMounted(() => {
     <h1 class="title">System Monitor</h1>
 
     <div class="grid">
-      <SysChart label="CPU Usage" :values="history.cpu" :labels="history.labels" color="#ef233c" />
-      <SysChart label="RAM Usage" :values="history.ram" :labels="history.labels" color="#4cc9f0" />
-      <SysChart label="Disk Usage (/)" :values="history.disk" :labels="history.labels" color="#fee440" />
+      <SysChart
+          v-if="visibility.cpu"
+          label="CPU Usage"
+          :values="history.cpu"
+          :labels="history.labels"
+          color="#ef233c"
+      />
+
+      <SysChart
+          v-if="visibility.ram"
+          label="RAM Usage"
+          :values="history.ram"
+          :labels="history.labels"
+          color="#4cc9f0"
+      />
+
+      <SysChart
+          v-if="visibility.disk"
+          label="Disk Usage (/)"
+          :values="history.disk"
+          :labels="history.labels"
+          color="#fee440"
+      />
     </div>
 
     <ProcessTable :processes="history.processes" />
@@ -57,7 +89,7 @@ body {
 
 .container {
   padding: 20px;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -66,6 +98,7 @@ body {
   margin-bottom: 30px;
   font-weight: 300;
   letter-spacing: 2px;
+  --wails-draggable: drag;
 }
 
 .grid {
@@ -73,12 +106,18 @@ body {
   grid-template-columns: 1fr;
   gap: 20px;
   margin-bottom: 20px;
+  min-height: 180px;
 }
 
-@media (min-width: 600px) {
-  .grid { grid-template-columns: 1fr 1fr; }
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
-@media (min-width: 900px) {
-  .grid { grid-template-columns: 1fr 1fr 1fr; }
+
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 </style>

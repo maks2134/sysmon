@@ -39,6 +39,36 @@ func (a *App) startup(ctx context.Context) {
 	go a.startSystemMonitor()
 }
 
+func (a *App) SendToggleEvent(graphName string) {
+	runtime.EventsEmit(a.ctx, "toggle_graph", graphName)
+}
+
+func (a *App) KillProcess(pid int32) string {
+	selection, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+		Type:          runtime.QuestionDialog,
+		Title:         "Confirm Kill",
+		Message:       fmt.Sprintf("Are you sure you want to kill PID %d?", pid),
+		Buttons:       []string{"Yes", "No"},
+		DefaultButton: "No",
+		CancelButton:  "No",
+	})
+	if err != nil {
+		return "Dialog Error"
+	}
+	if selection != "Yes" {
+		return "Cancelled"
+	}
+	p, err := process.NewProcess(pid)
+	if err != nil {
+		return fmt.Sprintf("Process not found: %v", err)
+	}
+	err = p.Kill()
+	if err != nil {
+		return fmt.Sprintf("Failed to kill: %v", err)
+	}
+	return "Process Killed"
+}
+
 func (a *App) startSystemMonitor() {
 	for {
 		if a.ctx.Err() != nil {
@@ -86,31 +116,6 @@ func (a *App) startSystemMonitor() {
 			processesList = processesList[:20]
 		}
 		stats.Processes = processesList
-		fmt.Printf("CPU: %.1f | RAM: %.1f | Procs: %d\n", stats.CPU, stats.RAM, len(stats.Processes))
 		runtime.EventsEmit(a.ctx, "system_stats", stats)
 	}
-}
-
-func (a *App) KillProcess(pid int32) (string, error) {
-	dialog, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
-		Type:    runtime.QuestionDialog,
-		Title:   fmt.Sprintf("Kill procces, pid: %d", pid),
-		Message: fmt.Sprintf("Do you real kill this procces: %d", pid),
-		Buttons: []string{"Yes", "No"},
-	})
-	if err != nil {
-		return "question dialogs errors", err
-	}
-	if dialog == "No" {
-		return "question dialogs cancel", nil
-	}
-	p, err := process.NewProcess(pid)
-	if err != nil {
-		return "process errors", err
-	}
-	err = p.Kill()
-	if err != nil {
-		return "process errors", err
-	}
-	return "process killed", nil
 }
