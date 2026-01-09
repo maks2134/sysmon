@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -10,18 +15,41 @@ type App struct {
 	ctx context.Context
 }
 
-// NewApp creates a new App application struct
+type Stats struct {
+	CPU float64 `json:"cpu"`
+	RAM float64 `json:"ram"`
+}
+
 func NewApp() *App {
 	return &App{}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	go a.start()
 }
 
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+func (a *App) start() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-a.ctx.Done():
+			return
+		case <-ticker.C:
+			cpuPercent, err := cpu.Percent(0, false)
+			if err != nil {
+				fmt.Println("Error getting CPU stats: ", err)
+			}
+			ram, err := mem.VirtualMemory()
+			if err != nil {
+				fmt.Println("Error getting memory stats: ", err)
+			}
+			stats := Stats{
+				CPU: cpuPercent[0],
+				RAM: ram.UsedPercent,
+			}
+			runtime.EventsEmit(a.ctx, "system_stats", stats)
+		}
+	}
 }
