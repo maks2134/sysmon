@@ -1,43 +1,49 @@
 <script setup>
-import { reactive, onMounted, onUnmounted } from 'vue';
+import { reactive, onMounted } from 'vue';
 import { EventsOn } from '../wailsjs/runtime/runtime';
+import SysChart from './components/SysChart.vue';
+import ProcessTable from './components/ProcessTable.vue';
 
-const stats = reactive({
-  cpu: 0,
-  ram: 0
+const MAX_POINTS = 60;
+const initData = new Array(MAX_POINTS).fill(0);
+const initLabels = new Array(MAX_POINTS).fill("");
+
+const history = reactive({
+  cpu: [...initData],
+  ram: [...initData],
+  disk: [...initData],
+  labels: [...initLabels],
+  processes: []
 });
 
 onMounted(() => {
   EventsOn("system_stats", (data) => {
-    stats.cpu = data.cpu.toFixed(1);
-    stats.ram = data.ram.toFixed(1);
+    const cpuVal = data.cpu ? parseFloat(data.cpu.toFixed(1)) : 0;
+    const ramVal = data.ram ? parseFloat(data.ram.toFixed(1)) : 0;
+    const diskVal = data.disk ? parseFloat(data.disk.toFixed(1)) : 0;
+    const timeStr = new Date().toLocaleTimeString('ru-RU');
+
+    history.cpu = [...history.cpu.slice(1), cpuVal];
+    history.ram = [...history.ram.slice(1), ramVal];
+    history.disk = [...history.disk.slice(1), diskVal];
+    history.labels = [...history.labels.slice(1), timeStr];
+
+    history.processes = data.processes || [];
   });
 });
 </script>
 
 <template>
   <div class="container">
-    <h1>System Monitor</h1>
+    <h1 class="title">System Monitor</h1>
 
-    <div class="card">
-      <div class="stat-row">
-        <span>CPU Usage:</span>
-        <span class="value">{{ stats.cpu }}%</span>
-      </div>
-      <div class="progress-bg">
-        <div class="progress-fill cpu-fill" :style="{ width: stats.cpu + '%' }"></div>
-      </div>
+    <div class="grid">
+      <SysChart label="CPU Usage" :values="history.cpu" :labels="history.labels" color="#ef233c" />
+      <SysChart label="RAM Usage" :values="history.ram" :labels="history.labels" color="#4cc9f0" />
+      <SysChart label="Disk Usage (/)" :values="history.disk" :labels="history.labels" color="#fee440" />
     </div>
 
-    <div class="card">
-      <div class="stat-row">
-        <span>RAM Usage:</span>
-        <span class="value">{{ stats.ram }}%</span>
-      </div>
-      <div class="progress-bg">
-        <div class="progress-fill ram-fill" :style="{ width: stats.ram + '%' }"></div>
-      </div>
-    </div>
+    <ProcessTable :processes="history.processes" />
   </div>
 </template>
 
@@ -46,50 +52,33 @@ body {
   margin: 0;
   background-color: #2b2d42;
   color: white;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 50px;
-}
-
-.card {
-  background-color: #3d405b;
-  width: 300px;
   padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 30px;
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
   margin-bottom: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  font-weight: bold;
+@media (min-width: 600px) {
+  .grid { grid-template-columns: 1fr 1fr; }
 }
-
-.progress-bg {
-  width: 100%;
-  height: 20px;
-  background-color: #1b1d2e;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  transition: width 0.5s ease-in-out;
-}
-
-.cpu-fill {
-  background-color: #ef233c;
-}
-
-.ram-fill {
-  background-color: #8d99ae;
+@media (min-width: 900px) {
+  .grid { grid-template-columns: 1fr 1fr 1fr; }
 }
 </style>
