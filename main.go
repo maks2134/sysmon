@@ -12,13 +12,11 @@ import (
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
 	app := NewApp()
 
-	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "sysmon",
-		Width:  1024,
+		Width:  1240,
 		Height: 768,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
